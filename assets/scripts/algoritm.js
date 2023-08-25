@@ -315,7 +315,6 @@ function turboCheck() {
 function turboLog() {
     $('#timer').html(variables.counter);
     $('#timer2').html(variables.counter2);
-    $('#difference').html(variables.difference);
     $('#message').html(variables.message);
 
     let memoryTime, memoryString;
@@ -457,14 +456,14 @@ function turboFishing() {
                     // сигналим
                     variables.message = "Поймал!";
 
-                    // поплавок (поймал сделку)
-                    variables.flag = true;
+                    // вызываем функцию-свап
+                    turboSwap(false);
                 }
 
             }
 
-            // если простоял под 0.1 всю рыбалку без сделок ИЛИ поплавок (поймал сделку)
-            if (variables.flag || variables.counter == variables.fishing) {
+            // если простоял под 0.1 всю рыбалку без сделок
+            if (variables.counter == variables.fishing) {
                 // вызываем функцию-свап
                 turboSwap(false);
             }

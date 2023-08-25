@@ -9,9 +9,9 @@
     <link rel="stylesheet" href="assets/css/bootstrap-icons.css">
 </head>
 
-<body>
+<body style="background: lightslategrey;">
 
-    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary" style="opacity: 0.5;">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">Супер Удочка</a>
         </div>
@@ -25,54 +25,39 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col">
-                        <h3>Мониторинг</h3>
-                        <h2 id="monitoring_status">Отключен</h2>
-                        <h3 id="percentage"></h3>
-                        <button class="btn btn-success" id="monitoring" value="off">Включить</button>
-                        <button class="btn btn-danger" id="change">Поменять процент</button>
+                        <h4>Мониторинг</h4>
+                        <h3 id="monitoring_status">Отключен</h3>
+                        <h4 id="percentage"></h4>
 
                         <hr>
 
-                        <h5>Параметры</h5>
-                        <div class="row">
-                            <div class="col-6">
-                                <label>сколько сидеть под 0.1% (сек.)</label>
-                                <input type="number" min="0" class="form-control" id="fishing">
-                            </div>
-                            <div class="col-6">
-                                <label>сколько стоять под 2% (сек.)</label>
-                                <input type="number" min="0" class="form-control" id="stay">
-                            </div>
-                        </div>
+                        <h4>Ручной режим</h4>
+
+                        <button class="btn btn-success" id="monitoring" value="off">Включить</button>
+                        <button class="btn btn-danger" id="change">Свап</button>
+
+                        <hr>
                     </div>
                     <div class="col">
-                        <h3>Cправочная информация</h3>
-                        <h4>Таймер: <span id="timer"></span></h4>
-                        <h4>Разница: <span id="difference"></span></h4>
-                        <h4>Статус: <span id="message"></span></h4>
-                        <h4>Время последней сделки: <span id="memory"></span></h4>
-                        <h4 class="text-center">Статистика</h4>
-                        <ul class="list-group">
-                            <li class="list-group-item list-group-item-success d-flex justify-content-between">
-                                <span>Первые 50 сделок (2%):</span>
-                                <span id="successess"></span>
-                            </li>
-                            <li class="list-group-item list-group-item-danger d-flex justify-content-between">
-                                <span>Первые 50 сделок (0.1%):</span>
-                                <span id="faileses"></span>
-                            </li>
-                            
-                            <li class="list-group-item list-group-item-info"></li>
+                        <h4>Информация</h4>
+                        <hr>
+                        <h5>Таймер: <span id="timer"></span></h5>
+                        <hr>
+                        <h5>Статус: <span id="message"></span></h5>
+                        <hr>
+                        <h5>Последняя сделка: <span id="memory"></span></h5>
+                    </div>
+                </div>
+                <div class="row">
+                    <h5>Параметры</h5>
 
-                            <li class="list-group-item list-group-item-success d-flex justify-content-between">
-                                <span>Вторые 50 сделок (2%):</span>
-                                <span id="successess2"></span>
-                            </li>
-                            <li class="list-group-item list-group-item-danger d-flex justify-content-between">
-                                <span>Вторые 50 сделок (0.1%):</span>
-                                <span id="faileses2"></span>
-                            </li>
-                        </ul>
+                    <div class="col-6">
+                        <label>сидеть под 0.1% (сек.)</label>
+                        <input type="number" min="0" class="form-control" id="fishing">
+                    </div>
+                    <div class="col-6">
+                        <label>стоять под 2.0% (сек.)</label>
+                        <input type="number" min="0" class="form-control" id="stay">
                     </div>
                 </div>
 
@@ -105,6 +90,39 @@
                 </table>
             </div>
         </div>
+
+        <div class="card my-4">
+            <div class="card-header">
+
+            </div>
+            <div class="card-body">
+                <h4 class="text-center">Статистика</h4>
+                <ul class="list-group">
+                    <li class="list-group-item list-group-item-success d-flex justify-content-between">
+                        <span>Первые 50 (2.0%):</span>
+                        <span id="successess"></span>
+                    </li>
+                    <li class="list-group-item list-group-item-danger d-flex justify-content-between">
+                        <span>Первые 50 (0.1%):</span>
+                        <span id="faileses"></span>
+                    </li>
+
+                    <li class="list-group-item list-group-item-info"></li>
+
+                    <li class="list-group-item list-group-item-success d-flex justify-content-between">
+                        <span>Вторые 50 (2.0%):</span>
+                        <span id="successess2"></span>
+                    </li>
+                    <li class="list-group-item list-group-item-danger d-flex justify-content-between">
+                        <span>Вторые 50 (0.1%):</span>
+                        <span id="faileses2"></span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+
+
     </div>
 
     <script src="assets/js/bootstrap.bundle.js"></script>
