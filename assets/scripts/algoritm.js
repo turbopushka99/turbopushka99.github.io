@@ -62,10 +62,13 @@ const params = {
 // - stay - сколько секунд стоять под 2 (разгон)
 // - counter - таймер (один за всех)
 // - difference - разница между последней сделкой и временем системы
+// - newDeal - индикатор новой сделки (сколько должна быть разница между последней сделкой и временем системы в микросекундах!)
 // - message - статус работы
 // - memoryTime - время последней сделки (завершенной или нет неважно)
 // - currentTime - время последней сделки (незавершенной)
 // - systemTime - время системы
+// - fishingPercentage - процент, под которым сидим
+// - waitingPercentage - процент, под которым стоим
 // - flag - поплавок (флажок если поймал сделку на 0.1 для резкого свапа)
 let variables = {
     timerFunc: null,
@@ -77,11 +80,15 @@ let variables = {
 
     counter: 0,
     difference: 0,
+    newDeal: 10000,
     message: "",
 
     memoryTime: 0,
     currentTime: 0,
     systemTime: 0,
+
+    fishingPercentage: 0,
+    waitingPercentage: 0,
 
     flag: false
 };
@@ -153,6 +160,22 @@ function getPercentage() {
 
 /**
  * Функция ручного изменения процента
+ * @param {*} percentage 
+ */
+function manualChange(percentage) {
+    $.ajax({
+        url: urls.rateru,
+        type: "POST",
+        headers: mainHeaders,
+        contentType: "application/json",
+        dataType: "JSON",
+        data: JSON.stringify({ rate: '' + percentage }),
+        success: getPercentage
+    });
+}
+
+/**
+ * Функция автоматического изменения процента
  */
 function changePercentage() {
     $.ajax({
@@ -196,7 +219,7 @@ function getStatistic() {
                 successess = 0, faileses = 0;
             payments.forEach(function (element) {
                 let stavka = Math.round(1e4 * element.income / element.amount_in_cur) / 100;
-                if (stavka > 1) {
+                if (stavka >= 1.0) {
                     successess++;
                 } else {
                     faileses++;
@@ -220,7 +243,7 @@ function getStatistic() {
                 successess = 0, faileses = 0;
             payments.forEach(function (element) {
                 let stavka = Math.round(1e4 * element.income / element.amount_in_cur) / 100;
-                if (stavka > 1) {
+                if (stavka >= 1.0) {
                     successess++;
                 } else {
                     faileses++;
@@ -272,16 +295,17 @@ function toggleTurbo(toggler, switched = true) {
     if (switched) {
         variables.fishing = $('#fishing').val();
         variables.stay = $('#stay').val();
+        variables.fishingPercentage = $('#fishingPercentage').val();
+        variables.waitingPercentage = $('#waitingPercentage').val();
 
-        if (variables.fishing && variables.stay) {
+        if (variables.fishing && variables.stay && variables.fishingPercentage && variables.waitingPercentage) {
             toggler.val("on");
             $('#monitoring_status').html("=Турбо режим=");
             $('#monitoring_spinner').show();
             turboCheck();
             variables.timerFunc = setInterval(turbo, variables.algorithmTime);
         } else {
-            alert("Сколько секунд сидеть под 0.1% ?");
-            alert("А сколько секунд стоять под 2% ?");
+            alert("Под каким % сидеть?\nСколько сидеть?\nПод каким % стоять?\nСколько стоять?");
         }
 
     } else {
@@ -295,18 +319,25 @@ function toggleTurbo(toggler, switched = true) {
 }
 
 /**
- * Функция безопасности (ставит всегда 2 процента, вызывается при включении / отключении турбо режима)
+ * Функция безопасности (ставит всегда указанный в инпуте под каким стоять процент, вызывается при включении / отключении турбо режима)
  */
 function turboCheck() {
-    $.ajax({
-        url: urls.rateru,
-        type: "POST",
-        headers: mainHeaders,
-        contentType: "application/json",
-        dataType: "JSON",
-        data: JSON.stringify({ rate: '2' }),
-        success: getPercentage
-    });
+    // обнуляем таймер
+    variables.counter = 0;
+
+    // обнуляем флажок
+    variables.flag = false;
+
+    // обнуляем разницу
+    variables.difference = 0;
+
+    // обнуляем времена
+    variables.memoryTime = 0;
+    variables.currentTime = 0;
+    variables.systemTime = 0;
+
+    // вызываем функцию изменения процента на тот, который укзаан в инпуте (под каким стоять)
+    manualChange(variables.waitingPercentage);
 }
 
 /**
@@ -329,7 +360,28 @@ function turboLog() {
     $('#memory').html(memoryString);
 }
 
+/**
+ * Функция для вывода отладочной информации
+ */
+function debug() {
+    let systemStr = new Date(variables.systemTime),
+        currentStr = new Date(variables.currentTime),
+        memoryStr = new Date(variables.memoryTime);
 
+    let deb = `
+        message : ${variables.message}
+        systemTime : ${variables.systemTime} [${systemStr.toLocaleTimeString()}]
+        currentTime : ${variables.currentTime} [${currentStr.toLocaleTimeString()}]
+        memoryTime : ${variables.memoryTime} [${memoryStr.toLocaleTimeString()}]
+        difference : ${variables.difference}
+        newDeal : ${variables.newDeal}`;
+
+    // Object.keys(variables).forEach(function (index) {
+    // deb += index + " : " + variables[index] + "\n";
+    // });
+
+    $('#debug').html(deb);
+}
 /**
  * Функция основного мониторинга
  */
@@ -337,7 +389,7 @@ function turbo() {
     // отображение переменных
     turboLog();
 
-    // Берем параметр простоя из инпута (сколько стоять под 2) и кладем его в массив
+    // Берем параметр простоя из инпута (сколько стоять) и кладем его в массив
     variables.stay = $('#stay').val();
 
     // Проверка сделок + таймер (1 запрос)
@@ -359,25 +411,13 @@ function turbo() {
                 // если сделки уже есть
                 variables.message = "Сделки есть, но новых нет.";
 
-                // вычисляем время системы 
-                variables.systemTime = new Date().getTime();
+                // вызываем функцию запоминания времени (она создает разницу difference)
+                turboMemoryTime(payments[0]);
 
-                // вычисляем время последней сделки
-                variables.currentTime = new Date(payments[0].created_at).getTime();
-
-                // запоминаем через условие разницы
-                if (variables.currentTime > variables.memoryTime) {
-                    variables.memoryTime = variables.currentTime;
-                }
-
-                // находим разницу между ВРЕМЕНЕМ СИСТЕМЫ и ЗАПОМНЕННЫМ ВРЕМЕНЕМ ПОСЛЕДНЕЙ СДЕЛКИ
-                variables.difference = parseFloat((variables.systemTime - variables.memoryTime) / (1000 * 60)).toFixed(2);
-
-                // если эта самая разница (difference) < 0.5 (значит что пришла новая сделка)
-                // что такое 0.5 ? это полминуты, а именно 30 секунд
-                if (variables.difference < 0.5) {
-                    // ставим таймер в 30 секунд
-                    variables.counter = 30;
+                // если эта самая разница (difference) <= newDeal мс, т.е. пришла новая сделка
+                if (variables.difference <= variables.newDeal) {
+                    // ставим таймер в newDeal секунд
+                    variables.counter = variables.newDeal / 1000;
 
                     // сидим кайфуем
                     variables.message = "Новая сделка!";
@@ -402,6 +442,29 @@ function turbo() {
         }
 
     });
+}
+
+/**
+ * Функция запоминания времени в глобальный массив
+ */
+function turboMemoryTime(deal) {
+    // вычисляем время системы 
+    variables.systemTime = new Date().getTime();
+
+    // вычисляем время последней сделки
+    variables.currentTime = new Date(deal.created_at).getTime();
+
+    // находим разницу между ВРЕМЕНЕМ СИСТЕМЫ и ЗАПОМНЕННЫМ ВРЕМЕНЕМ ПОСЛЕДНЕЙ СДЕЛКИ
+    // хранить будем в целом виде, ну его эти дроби
+    // variables.difference = parseFloat(variables.systemTime - variables.memoryTime) / (1000 * 60)).toFixed(2);
+
+    // запоминаем через условие разницы
+    if (variables.currentTime >= variables.memoryTime) {
+        variables.memoryTime = variables.currentTime;
+    }
+
+    // при ожидании сделки находим разницу между ВРЕМЕНЕМ СИСТЕМЫ И ЗАПОМНЕННЫМ ВРЕМЕНЕМ ПОСЛЕДНЕЙ СДЕЛКИ
+    variables.difference = variables.systemTime - variables.memoryTime;
 }
 
 /**
@@ -433,37 +496,26 @@ function turboFishing() {
             displayTable(payments);
 
             if (payments[0]) {
-                // если они вообще есть
-
+                // если они уже есть
                 // таймер обнулять не нужно, потому что здесь мы работаем И по таймеру И по разнице (т.е. когда пришла новая сделка)
-                // вычисляем время системы 
-                variables.systemTime = new Date().getTime();
 
-                // вычисляем время последней сделки
-                variables.currentTime = new Date(payments[0].created_at).getTime();
+                // вызываем функцию запоминания времени (она создает разницу difference)
+                turboMemoryTime(payments[0]);
 
-                // запоминаем через условие разницы
-                if (variables.currentTime > variables.memoryTime) {
-                    variables.memoryTime = variables.currentTime;
-                }
-
-                // находим разницу между ВРЕМЕНЕМ СИСТЕМЫ и ЗАПОМНЕННЫМ ВРЕМЕНЕМ ПОСЛЕДНЕЙ СДЕЛКИ
-                variables.difference = parseFloat((variables.systemTime - variables.memoryTime) / (1000 * 60)).toFixed(2);
-
-                // если эта разница < 2 минут (значит что пришла новая сделка)
-                if (variables.difference < 2.0) {
+                // если эта разница <= newDeal микросекунд (значит что пришла новая сделка) И это не одна и та же сделка!!!!!!!!!!!!!!!!!
+                if (variables.difference <= variables.newDeal && variables.difference > 0) {
 
                     // сигналим
                     variables.message = "Поймал!";
 
-                    // вызываем функцию-свап
-                    turboSwap(false);
+                    // ставим флажок
+                    variables.flag = true;
                 }
-
             }
+            // если их нет, то ничего не делаем просто смотрим на флаг и на таймер
 
-            // если простоял под 0.1 всю рыбалку без сделок
-            if (variables.counter == variables.fishing) {
+            // если простоял всю рыбалку без сделок ИЛИ поймал сделку (флажок)
+            if (variables.flag || variables.counter == variables.fishing) {
                 // вызываем функцию-свап
                 turboSwap(false);
             }
@@ -486,23 +538,30 @@ function turboSwap(mode = true) {
     // обнуляем поплавок (флаг)
     variables.flag = false;
 
-    // свапаем процент
-    changePercentage();
-
     // обновляем статистику
     getStatistic();
 
     // выключаем предыдущую функцию
     clearInterval(variables.timerFunc);
 
+    // Берем введенные проценты
+    variables.fishingPercentage = $('#fishingPercentage').val();
+    variables.waitingPercentage = $('#waitingPercentage').val();
+
     if (mode) {
         // с ожидания на рыбалку
+
+        // свапаем процент
+        manualChange(variables.fishingPercentage);
 
         // запускаем рыбалку
         variables.timerFunc = setInterval(turboFishing, variables.algorithmTime);
 
     } else {
         // с рыбалки на мониторинг
+
+        // свапаем процент
+        manualChange(variables.waitingPercentage);
 
         // запускаем основной мониторинг
         variables.timerFunc = setInterval(turbo, variables.algorithmTime);
@@ -538,7 +597,15 @@ $(document).ready(function () {
         }
     });
     // Кнопка "Поменять процент"
-    $('#change').on('click', changePercentage);
+    $('#change').on('click', function (event) {
+        event.preventDefault();
+        let percentage = $('#manualPercentage').val();
+        if (percentage) {
+            manualChange(percentage);
+        } else {
+            alert("Сколько ставим?");
+        }
+    });
 
     // Кнопка "Turbo"
     $('#turbo').on('click', function (event) {
