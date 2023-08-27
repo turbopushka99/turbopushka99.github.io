@@ -486,7 +486,6 @@ function turboMemoryTime(deal, mode = true) {
         variables.difference = variables.systemTime - variables.memoryTime;
     } else {
         // если мы рыбачим        
-
         variables.difference = variables.currentTime - variables.memoryTime;
     }
 
@@ -496,6 +495,7 @@ function turboMemoryTime(deal, mode = true) {
  * А вот и она - та самая рыбалочная функция
  */
 function turboFishing() {
+    debug();
     // давай скажем о том, что рыбалка началась :)
     variables.message = "Рыбалка началась!";
 
@@ -524,17 +524,21 @@ function turboFishing() {
             // вызываем функцию запоминания времени (она создает разницу difference) (она вызывается с флагом false, потому что мы запоминаем время последней сделки)
             if (payments[0]) {
                 turboMemoryTime(payments[0], false);
-                // если эта разница > 0, т.е. пришла НОВАЯ СДЕЛКА (в остальных случаях разница будет равна 0 ПОТОМУ ЧТО новых сделок нет!)
+                // если эта разница > 0, т.е. пришла НОВАЯ СДЕЛКА (в остальных случаях разница будет равна 0 ПОТОМУ ЧТО НОВЫХ сделок нет!)
                 if (variables.difference > 0) {
 
                     // сигналим
                     variables.message = "Поймал!";
 
+                    // если поймал после двух кругов
+                    if (variables.circles == 2){
+                        // возвращаем назад время рыбалки
+                        $('#fishing').val(parseInt(variables.fishing) - 5);
+                    }
+
                     // обнуляем круги
                     variables.circles = 0;
 
-                    // возвращаем назад время рыбалки
-                    $('#fishing').val(parseInt(variables.fishing) - 5);
 
                     // ставим флажок
                     variables.flag = true;
