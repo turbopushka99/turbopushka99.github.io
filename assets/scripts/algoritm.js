@@ -396,7 +396,7 @@ function turbo() {
         variables.circles = 0;
 
         // ставим время рыбалки в 2 раза больше
-        $('#fishing').val(60);
+        $('#fishing').val(variables.fishing + 5);
     }
 
     // отображение переменных
@@ -467,8 +467,8 @@ function turbo() {
  * Функция запоминания времени в глобальный массив
  */
 function turboMemoryTime(deal, mode = true) {
-        // вычисляем время последней сделки
-        variables.currentTime = new Date(deal.created_at).getTime();
+    // вычисляем время последней сделки
+    variables.currentTime = new Date(deal.created_at).getTime();
 
     if (mode) {
         // если мы работаем в режиме ожидания
@@ -526,16 +526,16 @@ function turboFishing() {
                 turboMemoryTime(payments[0], false);
                 // если эта разница > 0, т.е. пришла НОВАЯ СДЕЛКА (в остальных случаях разница будет равна 0 ПОТОМУ ЧТО новых сделок нет!)
                 if (variables.difference > 0) {
-    
+
                     // сигналим
                     variables.message = "Поймал!";
-    
+
                     // обнуляем круги
                     variables.circles = 0;
 
                     // возвращаем назад время рыбалки
-                    $('#fishing').val(30);
-    
+                    $('#fishing').val(variables.fishing - 5);
+
                     // ставим флажок
                     variables.flag = true;
                 }
