@@ -302,6 +302,7 @@ function toggleTurbo(toggler, switched = true) {
 
         if (variables.fishing && variables.stay && variables.fishingPercentage && variables.waitingPercentage) {
             toggler.val("on");
+            toggler.html("Turbo ON");
             $('#monitoring_status').html("=Турбо режим=");
             $('#monitoring_spinner').show();
             turboCheck();
@@ -312,6 +313,7 @@ function toggleTurbo(toggler, switched = true) {
 
     } else {
         toggler.val("off");
+        toggler.html("Tubro OFF");
         $('#monitoring_status').html("Отключен");
         $('#monitoring_spinner').hide();
         $('#message').html("");
@@ -432,12 +434,6 @@ function turbo() {
                     // ставим таймер в newDeal секунд
                     variables.counter = variables.newDeal / 1000;
 
-                    // если после 2 кругов пошла сделка
-                    if (variables.stay == 60) {
-                        // возвращаем обратно время ожидания
-                        $('#stay').val(120);
-                    }
-
                     // сидим кайфуем
                     variables.message = "Новая сделка!";
                 } else {
@@ -495,7 +491,6 @@ function turboMemoryTime(deal, mode = true) {
  * А вот и она - та самая рыбалочная функция
  */
 function turboFishing() {
-    debug();
     // давай скажем о том, что рыбалка началась :)
     variables.message = "Рыбалка началась!";
 
@@ -524,6 +519,7 @@ function turboFishing() {
             // вызываем функцию запоминания времени (она создает разницу difference) (она вызывается с флагом false, потому что мы запоминаем время последней сделки)
             if (payments[0]) {
                 turboMemoryTime(payments[0], false);
+
                 // если эта разница > 0, т.е. пришла НОВАЯ СДЕЛКА (в остальных случаях разница будет равна 0 ПОТОМУ ЧТО НОВЫХ сделок нет!)
                 if (variables.difference > 0) {
 
@@ -533,9 +529,11 @@ function turboFishing() {
                     // обнуляем круги
                     variables.circles = 0;
 
+                    // возвращаем на место время рыбалки
+                    // $('#fishing').val(parseInt(variables.fishing - 5));
 
-                    // ставим флажок
-                    variables.flag = true;
+                    // вызываем функцию-свап
+                    turboSwap(false);
                 }
             }
 
@@ -545,16 +543,6 @@ function turboFishing() {
             if (variables.counter == variables.fishing) {
                 // круг +1
                 variables.circles++;
-            }
-
-            // если прошло два круга
-            if (variables.circles == 2) {
-                // возвращаем назад время рыбалки
-                // $('#fishing').val(parseInt(variables.fishing) - 5);
-            }
-
-            // если простоял всю рыбалку без сделок ИЛИ поймал сделку (флажок)
-            if (variables.flag || variables.counter == variables.fishing) {
 
                 // вызываем функцию-свап
                 turboSwap(false);
