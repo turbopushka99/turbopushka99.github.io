@@ -395,8 +395,8 @@ function turbo() {
         // обнуляем круги
         variables.circles = 0;
 
-        // ставим время рыбалки в 2 раза больше
-        $('#fishing').val(variables.fishing + 5);
+        // ставим время рыбалки на 5 сек больше
+        $('#fishing').val(parseInt(variables.fishing) + 5);
     }
 
     // отображение переменных
@@ -534,7 +534,7 @@ function turboFishing() {
                     variables.circles = 0;
 
                     // возвращаем назад время рыбалки
-                    $('#fishing').val(variables.fishing - 5);
+                    $('#fishing').val(parseInt(variables.fishing) - 5);
 
                     // ставим флажок
                     variables.flag = true;
