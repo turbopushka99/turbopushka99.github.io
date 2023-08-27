@@ -396,7 +396,7 @@ function turbo() {
         variables.circles = 0;
 
         // ставим время рыбалки на 5 сек больше
-        $('#fishing').val(parseInt(variables.fishing) + 5);
+        // $('#fishing').val(parseInt(variables.fishing) + 5);
     }
 
     // отображение переменных
@@ -530,12 +530,6 @@ function turboFishing() {
                     // сигналим
                     variables.message = "Поймал!";
 
-                    // если поймал после двух кругов
-                    if (variables.circles == 2){
-                        // возвращаем назад время рыбалки
-                        $('#fishing').val(parseInt(variables.fishing) - 5);
-                    }
-
                     // обнуляем круги
                     variables.circles = 0;
 
@@ -551,6 +545,12 @@ function turboFishing() {
             if (variables.counter == variables.fishing) {
                 // круг +1
                 variables.circles++;
+            }
+
+            // если прошло два круга
+            if (variables.circles == 2) {
+                // возвращаем назад время рыбалки
+                // $('#fishing').val(parseInt(variables.fishing) - 5);
             }
 
             // если простоял всю рыбалку без сделок ИЛИ поймал сделку (флажок)
