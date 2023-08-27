@@ -70,6 +70,7 @@ const params = {
 // - fishingPercentage - процент, под которым сидим
 // - waitingPercentage - процент, под которым стоим
 // - flag - поплавок (флажок если поймал сделку на 0.1 для резкого свапа)
+// - circles - количество кругов (для автоматического изменения времени ожидания)
 let variables = {
     timerFunc: null,
     timerManual: 0,
@@ -90,7 +91,8 @@ let variables = {
     fishingPercentage: 0,
     waitingPercentage: 0,
 
-    flag: false
+    flag: false,
+    circles: 0
 };
 
 // -----------------------------------Ручной режим [НАЧАЛО]-----------------------------------------
@@ -347,6 +349,7 @@ function turboLog() {
     $('#timer').html(variables.counter);
     $('#timer2').html(variables.counter2);
     $('#message').html(variables.message);
+    $('#circles').html(variables.circles);
 
     let memoryTime, memoryString;
 
@@ -386,6 +389,16 @@ function debug() {
  * Функция основного мониторинга
  */
 function turbo() {
+
+    // если прошло 2 круга без сделок
+    if (variables.circles == 2) {
+        // обнуляем круги
+        variables.circles = 0;
+
+        // ставим время рыбалки в 2 раза больше
+        $('#fishing').val(60);
+    }
+
     // отображение переменных
     turboLog();
 
@@ -419,6 +432,12 @@ function turbo() {
                     // ставим таймер в newDeal секунд
                     variables.counter = variables.newDeal / 1000;
 
+                    // если после 2 кругов пошла сделка
+                    if (variables.stay == 60) {
+                        // возвращаем обратно время ожидания
+                        $('#stay').val(120);
+                    }
+
                     // сидим кайфуем
                     variables.message = "Новая сделка!";
                 } else {
@@ -448,15 +467,13 @@ function turbo() {
  * Функция запоминания времени в глобальный массив
  */
 function turboMemoryTime(deal, mode = true) {
-    // вычисляем время последней сделки
-    variables.currentTime = new Date(deal.created_at).getTime();
-
-    // находим разницу между ВРЕМЕНЕМ СИСТЕМЫ и ЗАПОМНЕННЫМ ВРЕМЕНЕМ ПОСЛЕДНЕЙ СДЕЛКИ
-    // хранить будем в целом виде, ну его эти дроби
-    // variables.difference = parseFloat(variables.systemTime - variables.memoryTime) / (1000 * 60)).toFixed(2);
+        // вычисляем время последней сделки
+        variables.currentTime = new Date(deal.created_at).getTime();
 
     if (mode) {
         // если мы работаем в режиме ожидания
+        // находим разницу между ВРЕМЕНЕМ СИСТЕМЫ и ЗАПОМНЕННЫМ ВРЕМЕНЕМ ПОСЛЕДНЕЙ СДЕЛКИ
+        // хранить будем в целом виде, ну его эти дроби
 
         // вычисляем время системы 
         variables.systemTime = new Date().getTime();
@@ -468,7 +485,8 @@ function turboMemoryTime(deal, mode = true) {
         // при ожидании сделки находим разницу между ВРЕМЕНЕМ СИСТЕМЫ И ЗАПОМНЕННЫМ ВРЕМЕНЕМ ПОСЛЕДНЕЙ СДЕЛКИ
         variables.difference = variables.systemTime - variables.memoryTime;
     } else {
-        // если мы рыбачим
+        // если мы рыбачим        
+
         variables.difference = variables.currentTime - variables.memoryTime;
     }
 
@@ -502,27 +520,38 @@ function turboFishing() {
             // сразу же их отображаем
             displayTable(payments);
 
+            // неважно есть сделки старые или их нет вообще
+            // вызываем функцию запоминания времени (она создает разницу difference) (она вызывается с флагом false, потому что мы запоминаем время последней сделки)
             if (payments[0]) {
-                // если они уже есть
-                // таймер обнулять не нужно, потому что здесь мы работаем И по таймеру И по разнице (т.е. когда пришла новая сделка)
-
-                // вызываем функцию запоминания времени (она создает разницу difference)
                 turboMemoryTime(payments[0], false);
-
-                // если эта разница <= newDeal микросекунд (значит что пришла новая сделка) И это не одна и та же сделка!!!!!!!!!!!!!!!!!
+                // если эта разница > 0, т.е. пришла НОВАЯ СДЕЛКА (в остальных случаях разница будет равна 0 ПОТОМУ ЧТО новых сделок нет!)
                 if (variables.difference > 0) {
-
+    
                     // сигналим
                     variables.message = "Поймал!";
+    
+                    // обнуляем круги
+                    variables.circles = 0;
 
+                    // возвращаем назад время рыбалки
+                    $('#fishing').val(30);
+    
                     // ставим флажок
                     variables.flag = true;
                 }
             }
+
             // если их нет, то ничего не делаем просто смотрим на флаг и на таймер
+
+            // если простоял всю рыбалку без сделок
+            if (variables.counter == variables.fishing) {
+                // круг +1
+                variables.circles++;
+            }
 
             // если простоял всю рыбалку без сделок ИЛИ поймал сделку (флажок)
             if (variables.flag || variables.counter == variables.fishing) {
+
                 // вызываем функцию-свап
                 turboSwap(false);
             }
