@@ -448,9 +448,6 @@ function turbo() {
  * Функция запоминания времени в глобальный массив
  */
 function turboMemoryTime(deal, mode = true) {
-    // вычисляем время системы 
-    variables.systemTime = new Date().getTime();
-
     // вычисляем время последней сделки
     variables.currentTime = new Date(deal.created_at).getTime();
 
@@ -461,6 +458,9 @@ function turboMemoryTime(deal, mode = true) {
     if (mode) {
         // если мы работаем в режиме ожидания
 
+        // вычисляем время системы 
+        variables.systemTime = new Date().getTime();
+
         // запоминаем через условие разницы
         if (variables.currentTime >= variables.memoryTime) {
             variables.memoryTime = variables.currentTime;
@@ -469,7 +469,7 @@ function turboMemoryTime(deal, mode = true) {
         variables.difference = variables.systemTime - variables.memoryTime;
     } else {
         // если мы рыбачим
-        variables.difference = variables.systemTime - variables.currentTime;
+        variables.difference = variables.currentTime - variables.memoryTime;
     }
 
 }
@@ -510,7 +510,7 @@ function turboFishing() {
                 turboMemoryTime(payments[0], false);
 
                 // если эта разница <= newDeal микросекунд (значит что пришла новая сделка) И это не одна и та же сделка!!!!!!!!!!!!!!!!!
-                if (variables.difference <= variables.newDeal && variables.difference >= 1000) {
+                if (variables.difference > 0) {
 
                     // сигналим
                     variables.message = "Поймал!";
