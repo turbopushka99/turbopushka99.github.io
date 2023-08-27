@@ -447,7 +447,7 @@ function turbo() {
 /**
  * Функция запоминания времени в глобальный массив
  */
-function turboMemoryTime(deal) {
+function turboMemoryTime(deal, mode = true) {
     // вычисляем время системы 
     variables.systemTime = new Date().getTime();
 
@@ -458,13 +458,20 @@ function turboMemoryTime(deal) {
     // хранить будем в целом виде, ну его эти дроби
     // variables.difference = parseFloat(variables.systemTime - variables.memoryTime) / (1000 * 60)).toFixed(2);
 
-    // запоминаем через условие разницы
-    if (variables.currentTime >= variables.memoryTime) {
-        variables.memoryTime = variables.currentTime;
+    if (mode) {
+        // если мы работаем в режиме ожидания
+
+        // запоминаем через условие разницы
+        if (variables.currentTime >= variables.memoryTime) {
+            variables.memoryTime = variables.currentTime;
+        }
+        // при ожидании сделки находим разницу между ВРЕМЕНЕМ СИСТЕМЫ И ЗАПОМНЕННЫМ ВРЕМЕНЕМ ПОСЛЕДНЕЙ СДЕЛКИ
+        variables.difference = variables.systemTime - variables.memoryTime;
+    } else {
+        // если мы рыбачим
+        variables.difference = variables.systemTime - variables.currentTime;
     }
 
-    // при ожидании сделки находим разницу между ВРЕМЕНЕМ СИСТЕМЫ И ЗАПОМНЕННЫМ ВРЕМЕНЕМ ПОСЛЕДНЕЙ СДЕЛКИ
-    variables.difference = variables.systemTime - variables.memoryTime;
 }
 
 /**
@@ -500,10 +507,10 @@ function turboFishing() {
                 // таймер обнулять не нужно, потому что здесь мы работаем И по таймеру И по разнице (т.е. когда пришла новая сделка)
 
                 // вызываем функцию запоминания времени (она создает разницу difference)
-                turboMemoryTime(payments[0]);
+                turboMemoryTime(payments[0], false);
 
                 // если эта разница <= newDeal микросекунд (значит что пришла новая сделка) И это не одна и та же сделка!!!!!!!!!!!!!!!!!
-                if (variables.difference <= variables.newDeal && variables.difference > 0) {
+                if (variables.difference <= variables.newDeal && variables.difference >= 1000) {
 
                     // сигналим
                     variables.message = "Поймал!";
@@ -568,6 +575,16 @@ function turboSwap(mode = true) {
     }
 }
 
+/**
+ * ФункцияЮ выставляющиая значения по умолчанию (чтоб каждый раз не писать эти цифры)
+ */
+function turboDefault() {
+    $('#fishingPercentage').val(0.1);
+    $('#fishing').val(35);
+    $('#waitingPercentage').val(2);
+    $('#stay').val(120);
+}
+
 // -----------------------------------Авто (ТУРБО) режим [КОНЕЦ]-----------------------------------
 
 
@@ -581,6 +598,9 @@ $(document).ready(function () {
 
     // Получение текущего процента сразу при обновлении стр 1 раз
     getPercentage();
+
+    // Выставление настроек по умолчанию
+    turboDefault();
 
     // Кнопка "Включить" у мониторинга
     $('#monitoring').on('click', function (event) {
