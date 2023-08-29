@@ -152,6 +152,7 @@ function init() {
                 // выводим на экран
                 $('#manualAcceptPayments').html(response.accept ? 'Активен' : 'Приостановлен');
                 $('#turboAccept').html(response.accept ? 'Активен' : 'Приостановлен');
+                $('#balance').html(response.local.toFixed(2));
             }
         }).done(function () {
             // ТОЛЬКО КОГДА ДОСТАЛИ
@@ -209,6 +210,7 @@ function fastInit() {
     $('#manualAcceptPayments').html('<i class="bi bi-arrow-down-up"></i>');
     $('#turboPercentage').html('<i class="bi bi-arrow-down-up"></i>');
     $('#turboAccept').html('<i class="bi bi-arrow-down-up"></i>');
+    $('#balance').html('<i class="bi bi-arrow-down-up"></i>');
 
     // достаем общий процент
     $.ajax({
@@ -230,6 +232,7 @@ function fastInit() {
             // выводим на экран
             $('#manualAcceptPayments').html(response.accept ? 'Активен' : 'Приостановлен');
             $('#turboAccept').html(response.accept ? 'Активен' : 'Приостановлен');
+            $('#balance').html(response.local.toFixed(2));
         }
     });
     // достаем статистику (Первые 50 сделок)
@@ -282,6 +285,12 @@ function displayTableDeals(deals) {
 
     // если сделки есть
     if (deals.length) {
+        // выводим их количество
+        $('#dealsAmmount').html(deals.length);
+
+        // создаем переменную суммы
+        let totalAmmount = 0;
+
         // пробегаемся по ним
         deals.forEach(function (element) {
             // отсеиваем завершенные
@@ -293,16 +302,26 @@ function displayTableDeals(deals) {
                     date = new Date(element.created_at),
                     row = `<tr><td>${element.id}</td><td>${element.amount}</td><td>${stavka}</td><td>${date.toLocaleTimeString()}</td></tr>`;
 
+                // вычисляем их динамическую сумму
+                totalAmmount += element.amount;
+
                 // кладем в таблицы
                 $('#manualDeals').append(row);
                 $('#turboDeals').append(row);
             }
         });
+
+        // дописываем в таблицы сумму
+        $('#manualDeals').append(`<tr><th>Итого:</th><th colspan="4">${totalAmmount}</th></tr>`);
+        $('#turboDeals').append(`<tr><th>Итого:</th><th colspan="4">${totalAmmount}</th></tr>`);
+
     } else {
         // если сделок нет
         // кладем в таблицу строку о том, что их нет
         $('#manualDeals').append('<tr><td colspan="4">Сделок пока нет</td></tr>');
         $('#turboDeals').append('<tr><td colspan="4">Сделок пока нет</td></tr>');
+        // выводим - на количество
+        $('#dealsAmmount').html('-');
     }
 }
 
@@ -440,6 +459,13 @@ $(document).ready(function () {
 
     // Кнопка "Прием платежей"
     $('#manualAcceptToggle').on('click', manualAccept);
+
+    // Быстрые кнопочки
+    $('.fast-buttons').on('click', function (event) {
+        event.preventDefault();
+        $('#manualFishingPercentage').val($(this).val());
+        manualSwap();
+    });
 });
 
 // ---------------------------- ГЛАВНАЯ ФУНКЦИЯ [КОНЕЦ] ------------------------------------------------
