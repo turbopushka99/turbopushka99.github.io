@@ -65,13 +65,40 @@ const queryParams = {
 
 // ---------------------------- Главный массив переменных [НАЧАЛО] -----------------------------------
 // - timerFunc - интервальная переменная для хранения функции, которая вызывается раз в algorithmTime
+// - algorithmTime - скорость алгоритма (в миллисекундах)
 // - manualTimer - таймер ручного режима
+// - turboTimer - таймер турбо режима
+// - mode - режим работы бота (сообщение для строки статуса)
+// - turboAccelerateTime - время разгона
+// - turboFishingPercentage - процент рыбалки
+// - turboFishingTime - время рыбалки
+// - turboWaitingPercentage - процент ожидания
+// - turboWaitingTime - время ожидания сделки
+// - turboPauseTime - время паузы
+// - turboCurrentTime - время последней сделки
+// - turboMemoryTime - запомненное время последней сделки
+// - turboSystemTime - время системы
+// - turboDifference - разница между последней сделкой и последней запомненной сделкой
+// - turboFishingFlag - флажок на рыбалку (если поймал)
+// - turboCircles - счетчик кругов
 
 let mainVariables = {
     timerFunc: null,
     algorithmTime: 1000,
     manualTimer: 0,
-    mode: "Простаивает"
+    mode: "Простаивает",
+    turboTimer: 0,
+    turboAccelerateTime: 0,
+    turboFishingPercentage: 0,
+    turboFishingTime: 0,
+    turboWaitingPercentage: 0,
+    turboWaitingTime: 0,
+    turboPauseTime: 0,
+    turboCurrentTime: 0,
+    turboMemoryTime: 0,
+    turboDifference: 0,
+    turboFishingFlag: false,
+    turboCircles: 0
 };
 // ---------------------------- Главный массив переменных [КОНЕЦ] -----------------------------------
 
@@ -153,6 +180,7 @@ function init() {
                 $('#manualAcceptPayments').html(response.accept ? 'Активен' : 'Приостановлен');
                 $('#turboAccept').html(response.accept ? 'Активен' : 'Приостановлен');
                 $('#balance').html(response.local.toFixed(2));
+                $('#turboBalance').html(response.local.toFixed(2));
             }
         }).done(function () {
             // ТОЛЬКО КОГДА ДОСТАЛИ
@@ -167,11 +195,15 @@ function init() {
                     // передаем сделки на функцию обработчик
                     let first50 = countDeals(response.payments);
 
+                    // запоминаем время последней сделки
+                    turboMemoryTime(response.payments[0].created_at);
+
                     // выводим на экран
                     $('#manualFirstSuccessDeals').html(first50.successDeals);
                     $('#manualFirstFailDeals').html(first50.failDeals);
                     $('#turboFirstSuccessDeals').html(first50.successDeals);
                     $('#turboFirstFailDeals').html(first50.failDeals);
+                    $('#turboLastDeal').html(mainVariables.turboMemoryTime.toLocaleTimeString());
                 }
             }).done(function () {
                 // ТОЛЬКО ПОСЛЕ ЭТОГО
@@ -211,6 +243,7 @@ function fastInit() {
     $('#turboPercentage').html('<i class="bi bi-arrow-down-up"></i>');
     $('#turboAccept').html('<i class="bi bi-arrow-down-up"></i>');
     $('#balance').html('<i class="bi bi-arrow-down-up"></i>');
+    $('#turboBalance').html('<i class="bi bi-arrow-down-up"></i>');
 
     // достаем общий процент
     $.ajax({
@@ -233,6 +266,7 @@ function fastInit() {
             $('#manualAcceptPayments').html(response.accept ? 'Активен' : 'Приостановлен');
             $('#turboAccept').html(response.accept ? 'Активен' : 'Приостановлен');
             $('#balance').html(response.local.toFixed(2));
+            $('#turboBalance').html(response.local.toFixed(2));
         }
     });
     // достаем статистику (Первые 50 сделок)
@@ -242,14 +276,19 @@ function fastInit() {
         headers: mainHeaders,
         data: JSON.stringify(queryParams.static1),
         success: function (response) {
+            mainVariables.turboMemoryTime = new Date(response.payments[0].created_at).getTime();
+
             // передаем сделки на функцию обработчик
             let first50 = countDeals(response.payments);
+
+            mainVariables.turboMemoryTime = new Date(response.payments[0].created_at);
 
             // выводим на экран
             $('#manualFirstSuccessDeals').html(first50.successDeals);
             $('#manualFirstFailDeals').html(first50.failDeals);
             $('#turboFirstSuccessDeals').html(first50.successDeals);
             $('#turboFirstFailDeals').html(first50.failDeals);
+            $('#turboLastDeal').html(mainVariables.turboMemoryTime.toLocaleTimeString());
         }
     }).done(function () {
         // ТОЛЬКО ПОСЛЕ ЭТОГО
@@ -287,6 +326,7 @@ function displayTableDeals(deals) {
     if (deals.length) {
         // выводим их количество
         $('#dealsAmmount').html(deals.length);
+        $('#turboDealsAmmount').html(deals.length);
 
         // создаем переменную суммы
         let totalAmmount = 0;
@@ -322,6 +362,7 @@ function displayTableDeals(deals) {
         $('#turboDeals').append('<tr><td colspan="4">Сделок пока нет</td></tr>');
         // выводим - на количество
         $('#dealsAmmount').html('-');
+        $('#turboDealsAmmount').html('-');
     }
 }
 
@@ -331,9 +372,6 @@ function displayTableDeals(deals) {
 // ---------------------------- РУЧНОЙ РЕЖИМ [НАЧАЛО] -----------------------------------------------
 
 function manualMonitoring() {
-    // устанавливаем гранд-статус
-    setGrandStatus('Мониторинг сделок...');
-
     // получаем сделки
     $.ajax({
         url: urls.payments,
@@ -358,6 +396,9 @@ function toggleMonitoring(toggle, switched = false) {
         toggle.val('on');
         $('#manualMonitoringStatus').html('Запущен');
         $('#manualTimer').html(mainVariables.manualTimer);
+
+        // устанавливаем гранд-статус
+        setGrandStatus('Мониторинг сделок...');
         mainVariables.timerFunc = setInterval(manualMonitoring, mainVariables.algorithmTime);
     } else {
         mainVariables.mode = "Простаивает";
@@ -435,7 +476,398 @@ function manualAccept() {
 
 // ---------------------------- РУЧНОЙ РЕЖИМ [КОНЕЦ] ------------------------------------------------
 
-// ---------------------------- ТУРБО РЕЖИМ [НАЧАЛО] ------------------------------------------------
+// ---------------------------- ТУРБО РЕЖИМ [НАЧАЛО] -----------------------------------------------
+
+/**
+ * Функция индикатор режимов (выделяет блок в зависимости от режима работы)
+ * @param status
+ */
+function turboIndicator(status = false) {
+    // очищаем все индикаторы
+    $('#accelerateIndicator').removeClass('list-group-item-warning');
+    $('#pauseIndicator').removeClass('list-group-item-warning');
+    $('#fishingIndicator').removeClass('list-group-item-warning');
+    $('#waitingIndicator').removeClass('list-group-item-warning');
+
+    if (status) {
+        // ставим нужный
+        $('#' + status + 'Indicator').addClass('list-group-item-warning');
+    }
+}
+
+/**
+ * Функция, которая запускает турбо-режим
+ */
+function turboToggle(toggle, switched = false) {
+    if (switched) {
+        mainVariables.mode = "Турбо режим";
+        toggle.val('on');
+        $('#turboStatus').html('Запущен');
+        turboIndicator('accelerate');
+        $('#turboTimer').html(mainVariables.turboTimer);
+        mainVariables.timerFunc = setInterval(turboAccelerate, mainVariables.algorithmTime);
+    } else {
+        mainVariables.mode = "Простаивает";
+        toggle.val('off');
+        $('#turboStatus').html('Остановлен');
+        mainVariables.turboTimer = 0;
+        setGrandStatus('Готов к работе!', false);
+        clearInterval(mainVariables.timerFunc);
+        turboIndicator();
+        turboInit();
+    }
+}
+
+/**
+ * Функция, которая ставит на паузу и возвращает с нее обратно
+ */
+function turboAccept() {
+    // устанавливаем гранд-статус
+    setGrandStatus('Изменение приема платежей...');
+
+    // отправляем запрос
+    $.ajax({
+        url: urls.accept,
+        type: "GET",
+        headers: mainHeaders,
+        success: function () {
+            // устанавливаем гранд-статус
+            setGrandStatus('Прием платежей успешно изменен!');
+        }
+    }).done(function () {
+        // обновляем информацию
+        fastInit();
+    });
+
+}
+
+/**
+ * Функция которая свапает процент
+ * @param rate
+ */
+function turboSwap(rate) {
+    // устанавливаем гранд-статус
+    setGrandStatus('Обновление общего процента...');
+
+    // посылаем запрос
+    $.ajax({
+        url: urls.rateRu,
+        type: "POST",
+        headers: mainHeaders,
+        dataType: "JSON",
+        data: JSON.stringify({'rate': '' + rate}),
+        success: function (response) {
+            // если получилось, то сигналим
+            $('#turboIndicator').html('Успел!');
+            $('#turboIndicator').parent().removeClass('list-group-item-danger');
+            $('#turboIndicator').parent().addClass('list-group-item-success');
+
+            // обновляем пораньше
+            fastInit();
+        },
+        error: function (e) {
+            // если не получилось то сигналим
+            $('#turboIndicator').html('Поторопился!');
+            $('#turboIndicator').parent().removeClass('list-group-item-success');
+            $('#turboIndicator').parent().addClass('list-group-item-danger');
+
+            // и уходим в защиту (таймер = 0, останавливаем работу, ставим паузу, меняем индикатор, включаем режим паузы)
+            mainVariables.turboTimer = 0;
+            clearInterval(mainVariables.timerFunc);
+            turboAccept();
+            turboIndicator('pause');
+            mainVariables.timerFunc = setInterval(turboPause, mainVariables.algorithmTime);
+        }
+    });
+}
+
+/**
+ * Функция запоминания времени последней сделки в главный массив
+ * @param deal_time
+ * @param mode
+ */
+function turboMemoryTime(deal_time, mode = true) {
+    // вычисляем время пришедшей сделки
+    mainVariables.turboCurrentTime = new Date(deal_time);
+
+    if (mode) {
+        // если в режиме ожидания
+        // запоминаем время через условие разницы (строго больше, чтоб не запоминать когда это одна и та же сделка)
+        if (mainVariables.turboCurrentTime > mainVariables.turboMemoryTime) {
+            mainVariables.turboMemoryTime = mainVariables.turboCurrentTime;
+        }
+    }
+
+    // находим разницу
+    mainVariables.turboDifference = mainVariables.turboCurrentTime - mainVariables.turboMemoryTime;
+}
+
+/**
+ * Функция разгона
+ */
+function turboAccelerate() {
+    // считываем все параметры
+    turboInit();
+
+    // запрос на получение сделок
+    $.ajax({
+        url: urls.payments,
+        type: "POST",
+        headers: mainHeaders,
+        data: JSON.stringify(queryParams.main),
+        success: function (response) {
+            // получаем сделки
+            let payments = response.payments;
+
+            // сразу же их отображаем
+            displayTableDeals(payments);
+
+            // если сделки уже есть
+            if (payments[0]) {
+                // вызываем функцию запоминания времени (она создает разницу difference)
+                turboMemoryTime(payments[0].created_at);
+
+                // если эта самая разница строго больше 0 (т.е. это не одна и та же сделка!)
+                if (mainVariables.turboDifference > 0) {
+                    // обнуляем таймер
+                    mainVariables.turboTimer = 0;
+
+                    // устанавливаем гранд-статус
+                    setGrandStatus('Новая сделка!', false);
+                }
+            } else {
+                // если нет, то стоим кайфуем
+                setGrandStatus('Разгон...');
+            }
+        }
+    });
+
+    // если разогнался
+    if (mainVariables.turboTimer == mainVariables.turboAccelerateTime) {
+        // обнуляем таймер
+        mainVariables.turboTimer = 0;
+
+        // ставим паузу
+        turboAccept();
+
+        // свапаем процент на рыбалку
+        turboSwap(mainVariables.turboFishingPercentage);
+
+        // выключаем режим разгона
+        clearInterval(mainVariables.timerFunc);
+
+        // устанавливаем гранд-статус
+        setGrandStatus('Разогнался!');
+
+        // меняем индикатор
+        turboIndicator('pause');
+
+        // включаем режим паузы
+        mainVariables.timerFunc = setInterval(turboPause, mainVariables.algorithmTime);
+    }
+
+    // увеличиваем таймер
+    mainVariables.turboTimer++;
+}
+
+/**
+ * Функция режима паузы
+ */
+function turboPause() {
+    // считываем все параметры
+    turboInit();
+
+    // если дождался паузы
+    if (mainVariables.turboTimer == mainVariables.turboPauseTime) {
+        // обнуляем таймер
+        mainVariables.turboTimer = 0;
+
+        // отжимаем паузу
+        turboAccept();
+
+        // выключаем режим паузы
+        clearInterval(mainVariables.timerFunc);
+
+        // устанавливаем гранд-статус
+        setGrandStatus('Рыбалка началась!');
+
+        // меняем индикатор
+        turboIndicator('fishing');
+
+        // включаем режим рыбалки
+        mainVariables.timerFunc = setInterval(turboFishing, mainVariables.algorithmTime);
+    }
+
+    // увеличиваем таймер
+    mainVariables.turboTimer++;
+}
+
+/**
+ * Функция режима рыбалки
+ */
+function turboFishing() {
+    // считываем все параметры
+    turboInit();
+
+    // запрос на получение сделок
+    $.ajax({
+        url: urls.payments,
+        type: "POST",
+        headers: mainHeaders,
+        data: JSON.stringify(queryParams.main),
+        success: function (response) {
+            // получаем сделки
+            let payments = response.payments;
+
+            // сразу же их отображаем
+            displayTableDeals(payments);
+
+            if (payments[0]) {
+                // если сделки есть
+                // вызываем функцию запоминания времени (она создает разницу difference)
+                // (она вызывается с флагом false, потому что мы не запоминаем время последней сделки, а работаем исключительно с мемори тайм)
+                turboMemoryTime(payments[0].created_at, false);
+
+                // если эта разница строго > 0, т.е. пришла НОВАЯ СДЕЛКА (в остальных случаях разница будет равна 0 ПОТОМУ ЧТО НОВЫХ сделок нет!)
+                if (mainVariables.turboDifference > 0) {
+                    // устанавливаем гранд-статус
+                    setGrandStatus('Поймал!');
+
+                    // ставим флажок
+                    mainVariables.turboFishingFlag = true;
+                } else {
+                    // а если старая то все сидим дальше
+                    mainVariables.turboFishingFlag = false;
+
+                    // устанавливаем гранд-статус
+                    setGrandStatus('Новых сделок пока нет.');
+                }
+            }
+        }
+    });
+
+    // если простоял всю рыбалку без сделок или поймал сделку
+    if (mainVariables.turboTimer == mainVariables.turboFishingTime || mainVariables.turboFishingFlag) {
+        // обнуляем таймер
+        mainVariables.turboTimer = 0;
+
+        // обнуляем флажок
+        mainVariables.turboFishingFlag = false;
+
+        // выключаем режим рыбалки
+        clearInterval(mainVariables.timerFunc);
+
+        // меняем индикатор
+        turboIndicator('waiting');
+
+        // вызываем функцию-свап
+        turboSwap(mainVariables.turboWaitingPercentage);
+
+        // получаем статистику
+        fastInit();
+
+        // запускаем режим ожидания сделок
+        mainVariables.timerFunc = setInterval(turboWaiting, mainVariables.algorithmTime);
+    }
+
+    // увеличиваем таймер
+    mainVariables.turboTimer++;
+}
+
+/**
+ * Режим ожидания сделок
+ */
+function turboWaiting() {
+    // считываем все параметры
+    turboInit();
+
+    // запрос на получение сделок
+    $.ajax({
+        url: urls.payments,
+        type: "POST",
+        headers: mainHeaders,
+        data: JSON.stringify(queryParams.main),
+        success: function (response) {
+            // получаем сделки
+            let payments = response.payments;
+
+            // сразу же их отображаем
+            displayTableDeals(payments);
+
+            // если сделки есть
+            if (payments[0]) {
+                // устанавливаем гранд-статус
+                setGrandStatus('Сделки есть, но новых нет.');
+
+                // вызываем функцию запоминания времени (она создает разницу difference)
+                turboMemoryTime(payments[0].created_at, false);
+
+                // Если эта самая разница (difference) строго > 0, т.е. пришла новая сделка
+                if (mainVariables.turboDifference > 0) {
+                    // обнуляем таймер
+                    mainVariables.turboTimer = 0;
+
+                    // запоминаем это время
+                    turboMemoryTime(payments[0].created_at);
+
+                    // устанавливаем гранд-статус
+                    setGrandStatus('Новая сделка!');
+
+                    // обновляем данные
+                    fastInit();
+                }
+                // Если старые до сих пор висят, то пусть висят - ждем дальше
+            }
+        }
+    });
+
+
+    // если простоял
+    if (mainVariables.turboTimer == mainVariables.turboWaitingTime) {
+        // обнуляем таймер
+        mainVariables.turboTimer = 0;
+
+        // устанавливаем гранд-статус
+        setGrandStatus('Круг!');
+
+        // останавливаем режим ожидания
+        clearInterval(mainVariables.timerFunc);
+
+        // увеличиваем круги
+        mainVariables.turboCircles++;
+
+        // выводим на экран
+        $('#turboCircles').html(mainVariables.turboCircles);
+
+        // меняем индикатор
+        turboIndicator('accelerate');
+
+        // запускаем режим разгона
+        mainVariables.timerFunc = setInterval(turboAccelerate, mainVariables.algorithmTime);
+    }
+
+    // увеличиваем таймер
+    mainVariables.turboTimer++;
+}
+
+/**
+ * Функция пробегает по инпутам и заполняет главный массив
+ */
+function turboInit() {
+    mainVariables.turboAccelerateTime = $('#turboAccelerate').val();
+    mainVariables.turboFishingPercentage = $('#turboFishingPercentage').val();
+    mainVariables.turboFishingTime = $('#turboFishingTime').val();
+    mainVariables.turboWaitingPercentage = $('#turboWaitingPercentage').val();
+    mainVariables.turboWaitingTime = $('#turboWaitingTime').val();
+    mainVariables.turboPauseTime = $('#turboPauseTime').val();
+
+    // выводим таймер
+    $('#turboTimer').html(mainVariables.turboTimer);
+
+    // выводим время последней сделки
+    $('#turboLastDeal').html(mainVariables.turboMemoryTime.toLocaleTimeString());
+}
+
 // ---------------------------- ТУРБО РЕЖИМ [КОНЕЦ] ------------------------------------------------
 
 // ---------------------------- ГЛАВНАЯ ФУНКЦИЯ [НАЧАЛО] ------------------------------------------------
@@ -444,6 +876,7 @@ $(document).ready(function () {
     // Запускаем инициализирующую функцию
     init();
 
+    // -------------------------------- РУЧНОЙ РЕЖИМ [НАЧАЛО] ----------------------------------------------------
     // Кнопка "Обновить данные"
     $('#manualStatistic').on('click', fastInit);
 
@@ -466,6 +899,21 @@ $(document).ready(function () {
         $('#manualFishingPercentage').val($(this).val());
         manualSwap();
     });
+
+    // -------------------------------- РУЧНОЙ РЕЖИМ [КОНЕЦ] ---------------------------------------------------
+
+
+    // -------------------------------- ТУРБО РЕЖИМ [НАЧАЛО] --------------------------------------------------
+
+    // Кнопка "Турбо режим"
+    $('#turboToggle').on('click', function () {
+        $(this).toggleClass('btn-success');
+        $(this).parent().parent().toggleClass('text-bg-info');
+        turboToggle($(this), $(this).val() === 'off');
+    });
+
+    // -------------------------------- ТУРБО РЕЖИМ [КОНЕЦ] ---------------------------------------------------
+
 });
 
 // ---------------------------- ГЛАВНАЯ ФУНКЦИЯ [КОНЕЦ] ------------------------------------------------
