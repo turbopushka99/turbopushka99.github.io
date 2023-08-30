@@ -883,7 +883,7 @@ $(document).ready(function () {
     // Кнопка "Мониторинга"
     $('#manualMonitoringToggle').on('click', function () {
         $(this).toggleClass('btn-success');
-        $(this).parent().parent().toggleClass('text-bg-info');
+        $(this).parent().parent().toggleClass('text-bg-dark');
         toggleMonitoring($(this), $(this).val() === 'off');
     });
 
@@ -908,7 +908,7 @@ $(document).ready(function () {
     // Кнопка "Турбо режим"
     $('#turboToggle').on('click', function () {
         $(this).toggleClass('btn-success');
-        $(this).parent().parent().toggleClass('text-bg-info');
+        $(this).parent().parent().toggleClass('text-bg-dark');
         turboToggle($(this), $(this).val() === 'off');
     });
 
