@@ -276,8 +276,6 @@ function fastInit() {
         headers: mainHeaders,
         data: JSON.stringify(queryParams.static1),
         success: function (response) {
-            mainVariables.turboMemoryTime = new Date(response.payments[0].created_at).getTime();
-
             // передаем сделки на функцию обработчик
             let first50 = countDeals(response.payments);
 
@@ -566,7 +564,7 @@ function turboSwap(rate) {
             fastInit();
         },
         error: function (e) {
-            // если не получилось то сигналим
+            // если не получилось, то сигналим
             $('#turboIndicator').html('Поторопился!');
             $('#turboIndicator').parent().removeClass('list-group-item-success');
             $('#turboIndicator').parent().addClass('list-group-item-danger');
