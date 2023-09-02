@@ -482,14 +482,14 @@ function manualAccept() {
  */
 function turboIndicator(status = false) {
     // очищаем все индикаторы
-    $('#accelerateIndicator').removeClass('list-group-item-warning');
-    $('#pauseIndicator').removeClass('list-group-item-warning');
-    $('#fishingIndicator').removeClass('list-group-item-warning');
-    $('#waitingIndicator').removeClass('list-group-item-warning');
+    $('#accelerateIndicator').removeClass('list-group-item-danger');
+    $('#pauseIndicator').removeClass('list-group-item-danger');
+    $('#fishingIndicator').removeClass('list-group-item-danger');
+    $('#waitingIndicator').removeClass('list-group-item-danger');
 
     if (status) {
         // ставим нужный
-        $('#' + status + 'Indicator').addClass('list-group-item-warning');
+        $('#' + status + 'Indicator').addClass('list-group-item-danger');
     }
 }
 
@@ -881,7 +881,7 @@ $(document).ready(function () {
     // Кнопка "Мониторинга"
     $('#manualMonitoringToggle').on('click', function () {
         $(this).toggleClass('btn-success');
-        $(this).parent().parent().toggleClass('text-bg-dark');
+        $(this).parent().parent().parent().toggleClass('text-bg-dark');
         toggleMonitoring($(this), $(this).val() === 'off');
     });
 
