@@ -529,14 +529,10 @@ function turboAccept() {
         type: "GET",
         headers: mainHeaders,
         success: function () {
-            // устанавливаем гранд-статус
-            setGrandStatus('Прием платежей успешно изменен!');
+            // обновляем информацию
+            fastInit();
         }
-    }).done(function () {
-        // обновляем информацию
-        fastInit();
     });
-
 }
 
 /**
