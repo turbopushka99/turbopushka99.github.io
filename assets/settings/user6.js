@@ -1,3 +1,3 @@
 // Аккаунт № 6
-const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ODQ5LCJleHAiOjE2OTM4MDIxNDksImlhdCI6MTY5MzE5NzM0OX0.vdRFJJ9xk9dEk3VZuyJJ5DofWSDk_qExTZdVqA9JU7I";
-const ukey = "f73dbdc1-5e43-459d-a7f9-57e2f421e5b6";
+const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ODQ5LCJleHAiOjE2OTQ0MTMyNjIsImlhdCI6MTY5MzgwODQ2Mn0.aMQBvJ6oOCy6EBCqkwRskbvEeJvNUynEu-BCcPUeknI";
+const ukey = "35e142a2-bdfc-4473-adec-1a50086a01bf";
